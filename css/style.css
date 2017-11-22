@@ -1,0 +1,34 @@
+﻿#body {
+	background-color: #F6F6F0;		
+	margin: 0px;
+	padding: 0px;
+}
+#topDiv {
+	margin: 0px;
+	padding: 0px;
+	width: 85%;
+	height: 10%;
+	background-color: #2F2827;
+	background-image: url('images/logo.jpg');
+	float: left;	
+}
+
+#categories {	
+	margin: 0px;
+	padding: 0px;
+	width: 15%;
+	background: #5D5D5D;
+	float: left;
+	height: 100%;	
+}
+
+#mainContainer {
+	
+	margin: 0px;
+	padding: 0px;
+	width: 85%;
+	height: 85%;
+	background-color: red;
+	display: block;
+	float: left;
+}
