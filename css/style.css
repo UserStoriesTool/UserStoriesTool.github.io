@@ -50,9 +50,9 @@
 }
 
 #contentDiv {
-	margin-left: 10px;
-	padding: 100%;
-	width: 85%;
+	margin: 0px;
+	padding-bottom: 100%;
+	width: 84%;
 	height: 85%;
 	background-color: F6F6F0;
 	display: block;
