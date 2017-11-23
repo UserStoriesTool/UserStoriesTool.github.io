@@ -37,6 +37,61 @@
 				<img src="images/2.PNG">
 				<p>&nbsp;</p>
 				<h2 id = "Chapter_2">Create Annotation</h2>
+				<br>To create a link between a UserStory and a java element (Method,Class or Constructor)
+				<br>just add the Annotation (@UserStoryLink) above the java element
+				<br>and press control + space (show content assist) and select a UserStory.
+				<p>&nbsp;</p>
+				<img src="images/3.PNG">
+				<p>&nbsp;</p>
+				<br>After saving the file the tool will create the link.
+				<br>As you can see bellow the annotation contains an array with the uids of the UserStories
+				<br>Example of a UserStory's uid : System.SubSystem.SubSystem.UserStory
+				<p>&nbsp;</p>
+				<img src="images/4.PNG">
+				<p>&nbsp;</p>
+				<br>Adding an anotation to a method will create the Annotation to the class automatically.
+				<p>&nbsp;</p>
+				<img src="images/5.PNG">
+				<p>&nbsp;</p>				
+				<h2 id = "Chapter_3">Remove Annotation</h2>
+				<p>&nbsp;</p>
+				<br>To remove a link just delete the link from the tree.
+				<br>The corresponding annotation will be removed too.
+				<br>In the next example the link to the UserStory(Add a new teacher to school) will be deleted
+				<br>and the the uid will be removed from the class(TeacherDatabase)
+				<p>&nbsp;</p>
+				<img src="images/6.PNG">
+				<p>&nbsp;</p>
+				<h2 id = "Chapter_4">Error Handler</h2>
+				<p>&nbsp;</p>
+				<br>The ErrorHandler will create a marker on the file in case of an error.
+				<br>There will be quickfixes for the 2 types of error that exists.
+				<br>The first type of error is missing Annotations.
+				<br>If there is a link on the tree but the files doesn't have the appropriate annotation
+				<br>the ErrorHandler will create a marker with 2 quickfixes.
+				<br>The quickfixes will be either adding the Annotation to the java element or deleting the 
+				<br>Link in the tree.
+				<p>&nbsp;</p>
+				<img src="images/8.PNG">
+				<p>&nbsp;</p>
+				<br>The second type of error is a missmatching in the uids.
+				<br>The Annotation must contain the right uid. In the example bellow the
+				<br>the uid, of the countEnglishTeachers method, doesn't exist in the tree.
+				<p>&nbsp;</p>
+				<img src="images/9.PNG">
+				<p>&nbsp;</p>
+				<br>The quickfixes 2 available quickfixes will be either removing the annotation either
+				<br>creating the missing UserStory.
+				<br>If the "Creating missing UserStory" action is selected every missing System, SubSystem and UserStory
+				<br>will be created. In this way the tool gives the option to the programmers to create Systems, SubSystems and 
+				<br>UserStories without cutting their pace.
+				<p>&nbsp;</p>
+				<img src="images/9.1.PNG">
+				<p>&nbsp;</p>
+				<br>And the result will be.
+				<p>&nbsp;</p>
+				<img src="images/9.2.PNG">
+				<p>&nbsp;</p>
 			</div>
 		</div>
 	</body>
