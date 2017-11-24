@@ -1,102 +1,109 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-	<head>
-		<link rel="shortcut icon" href="images/logo.png" />
-		<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
-		<!-- Τo βασικό css του site -->
-		<link rel="stylesheet" type="text/css" href="./css/style.css"/>
-		<title>UserStoriesTool</title>
-	</head>
-	<body id = "body">
-		<div id="pageContainer"><!-- O Βασικός container -->
-			<div id="leftDiv">			
-				<div id="logo" style = "margin-top: 10px">
-						<img alt="logo" height="130" src="images/us.png" width="159"/>
-						<h4 style="color: #ffffff">Made by : Kristo Koci and Theodoris Kyriazidis</h4>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+	
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+	
+    <title>UserStoriesTool for Eclipse</title>
+	<link rel="stylesheet" type="text/css" href="css/style.css"/>
+	<link rel="script" href="js/main.js"/>
+    <link rel="icon" href="favicon.ico">
+    <!-- Bootstrap core CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+	<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+
+  </head>
+
+<body data-spy="scroll" data-target=".sidebar">
+  
+
+
+	  
+<div class="container">
+
+      <div class="row">
+        <div class="col-lg-3 sidebar">
+          <ul class="nav nav-list affix">
+			<h3>UserStoriesTool</h3>
+			<p>Made by Kristo Koci & Theodoros Kyriazidis</p>
+            <li><a href="#about">Start</a></li>
+			<h4>Using Annotations</h4>
+            <li><a href="#setup">Setup</a></li>
+            <li><a href="#create_annotation">Creating an Annotation</a></li>
+            <li><a href="#remove_annotation">Removing an Annotation</a></li>
+            <li><a href="#error_handling">Error Handling</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-9 content">
+			<section id="about">
+				<div class="jumbotron jumbotron-ust">
+					<h1>UserStoriesTool</h1>
+					<p>Real-time requirements traceability plugin for Eclipse<p>
+					<p>
+					<a class="btn btn-success" href="#" role="button"><i class="fa fa-download"></i> Download UserStoriesTool</a>
+					<a class="btn btn-primary" href="UserStoryLink.jar"><i class="fa fa-download"></i> UserStoryLink.jar</a>
+					<a class="btn btn-default" href="#" role="button"><i class="fa fa-github"></i> UserStoriesTool on GitHub</a>
+					</p>
 				</div>
-				<ol>
-					<li><a href = "#Chapter_1" text-align = "center" style="color: #ffffff"><h3 style = "color: #ffffff">Install Jar</h3></a></li>
-					<li><a href = "#Chapter_2" text-align = "center" style="color: #ffffff"><h3 style = "color: #ffffff">Create Annotation</h3></a></li>
-					<li><a href = "#Chapter_3" text-align = "center" style="color: #ffffff"><h3 style = "color: #ffffff">Remove Annotation</h3></a></li>
-					<li><a href = "#Chapter_4" text-align = "center" style="color: #ffffff"><h3 style = "color: #ffffff">Error Handler</h3></a></li>
-					<li><a href = "#Chapter_5" text-align = "center" style="color: #ffffff"><h3 style = "color: #ffffff">Download UserStoriesTool</h3></a></li>
-				</ol>
-			</div>
-			<div id="contentDiv"><!-- O container των "υποσελίδων" -->
-				<h1 align = "center">UserStories Annotation Tutorial</h1>
-				<h2 id = "Chapter_1">Installing Jar</h2>
-				<br>You need to install the jar with the annotation...
-				<br>First create a folder in the project and place the <a href = "UserStoryLink.jar">UserStoryLink.jar</a> .
-				<br>The Project Explorer should look like this.
-				<p>&nbsp;</p>
-				<img src="images/1.PNG">
-				<p>&nbsp;</p>				
-				<br>Then right click on the project and select build-path.
-				<br>Select Libraries->Classpath(depending on the eclipse version)->Add Jars
-				<br>and then select the UserStoryLink.jar
-				<p>&nbsp;</p>
-				<img src="images/2.PNG">
-				<p>&nbsp;</p>
-				<h2 id = "Chapter_2">Create Annotation</h2>
-				<br>To create a link between a UserStory and a java element (Method,Class or Constructor)
-				<br>just add the Annotation (@UserStoryLink) above the java element
-				<br>and press control + space (show content assist) and select a UserStory.
-				<p>&nbsp;</p>
-				<img src="images/3.PNG">
-				<p>&nbsp;</p>
-				<br>After saving the file the tool will create the link.
-				<br>As you can see bellow the annotation contains an array with the uids of the UserStories
-				<br>Example of a UserStory's uid : System.SubSystem.SubSystem.UserStory
-				<p>&nbsp;</p>
-				<img src="images/4.PNG">
-				<p>&nbsp;</p>
-				<br>Adding an anotation to a method will create the Annotation to the class automatically.
-				<p>&nbsp;</p>
-				<img src="images/5.PNG">
-				<p>&nbsp;</p>				
-				<h2 id = "Chapter_3">Remove Annotation</h2>
-				<p>&nbsp;</p>
-				<br>To remove a link just delete the link from the tree.
-				<br>The corresponding annotation will be removed too.
-				<br>In the next example the link to the UserStory(Add a new teacher to school) will be deleted
-				<br>and the the uid will be removed from the class(TeacherDatabase)
-				<p>&nbsp;</p>
-				<img src="images/6.PNG">
-				<p>&nbsp;</p>
-				<h2 id = "Chapter_4">Error Handler</h2>
-				<p>&nbsp;</p>
-				<br>The ErrorHandler will create a marker on the file in case of an error.
-				<br>There will be quickfixes for the 2 types of error that exists.
-				<br>The first type of error is missing Annotations.
-				<br>If there is a link on the tree but the files doesn't have the appropriate annotation
-				<br>the ErrorHandler will create a marker with 2 quickfixes.
-				<br>The quickfixes will either add the Annotation to the java element or delete the 
-				<br>Link in the tree.
-				<br><h2><b>REMEMBER</b><h2> for the changes to be applied on tree... the files must be saved.
-				<p>&nbsp;</p>
-				<img src="images/8.PNG">
-				<p>&nbsp;</p>
-				<br>The second type of error is a missmatching in the uids.
-				<br>The Annotation must contain the right uid. In the example bellow the
-				<br>the uid, of the countEnglishTeachers method, doesn't exist in the tree.
-				<p>&nbsp;</p>
-				<img src="images/9.PNG">
-				<p>&nbsp;</p>
-				<br>The 2 available quickfixes wil either remove the annotation or
-				<br>create the missing UserStory.
-				<br>If the "Creating missing UserStory" action is selected every missing System, SubSystem and UserStory
-				<br>will be created. In this way the tool gives the option to the programmers to create Systems, SubSystems and 
-				<br>UserStories without cutting their pace.
-				<p>&nbsp;</p>
-				<img src="images/9.1.PNG">
-				<p>&nbsp;</p>
-				<br>And the result will be.
-				<p>&nbsp;</p>
-				<img src="images/9.2.PNG">
-				<p>&nbsp;</p>
-				<h2 id="Chapter_5">UserStoriesTool(<a href = "http://www.oracle.com/technetwork/java/javase/downloads/index.html">java</a> 1.7 and later)</h2>
-				<h2>Tested on eclipse <a href = "https://www.eclipse.org/downloads/packages/release/Mars/2">Mars</a> and <a href="https://www.eclipse.org/downloads/download.php?file=/oomph/epp/oxygen/">Oxygen</a></h2>
-				<br>you can download the project from <a href="">here</a>(not working)
-			</div>
-		</div>
-	</body>
+			</section>
+          
+		<section id="setup">
+		<h2>Setup</h2>
+		<p>You need to install the .jar to enable the Annotation Functionality.</p>
+		<p>First, create a folder in the project and place the <a href="#jar">UserStoryLink.jar</a> inside it. The Project Explorer should look like this:</p>
+		<p><img src="img/1.PNG"></p>
+		<p>Then right click on the project and select build-path.</p>
+		<p>Select Libraries->Classpath(depending on the eclipse version)->Add Jars and then select the UserStoryLink.jar</p>
+		<p><img src="img/2.PNG"></p>
+		</section>
+		<section id="create_annotation">
+		<h2>Creating an Annotation</h2>
+		
+		<p>To create a link between a UserStory and a java element (Method,Class or Constructor)
+		just add the Annotation (@UserStoryLink) above the java element and press control + space (show content assist) and select a UserStory.</p>
+		<p><img src="img/3.PNG"></p>
+		<p>After saving the file the tool will create the link.</p>
+		<p>As you can see below, the annotation contains an array with the uids of the UserStories.</p>
+		<p>Example of a UserStory's uid : System.SubSystem.SubSystem.UserStory</p>
+		<p><img src="img/4.PNG"></p>
+		<p>Adding an anotation to a method will create the Annotation to the class automatically.</p>
+		
+		
+		
+		</section>
+		
+		<section id="remove_annotation">
+		<h2>Section Four</h2>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi culpa, incidunt optio consequatur eius at voluptatibus beatae expedita blanditiis, magnam perspiciatis rem unde ad sequi ab velit pariatur facilis assumenda.</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ex officia quia, ducimus harum voluptatem consequuntur sequi, enim iste provident, necessitatibus, voluptatibus molestias! Quia eligendi ipsum nihil commodi odit illo quas.</p>
+		</section>
+		
+		<section id="remove_annotation">
+		<h2>Section Five</h2>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi culpa, incidunt optio consequatur eius at voluptatibus beatae expedita blanditiis, magnam perspiciatis rem unde ad sequi ab velit pariatur facilis assumenda.</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ex officia quia, ducimus harum voluptatem consequuntur sequi, enim iste provident, necessitatibus, voluptatibus molestias! Quia eligendi ipsum nihil commodi odit illo quas.</p>
+		</section>
+		
+		<section id="error_handling">
+		<h2>Section Five</h2>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Commodi culpa, incidunt optio consequatur eius at voluptatibus beatae expedita blanditiis, magnam perspiciatis rem unde ad sequi ab velit pariatur facilis assumenda.</p>
+		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ex officia quia, ducimus harum voluptatem consequuntur sequi, enim iste provident, necessitatibus, voluptatibus molestias! Quia eligendi ipsum nihil commodi odit illo quas.</p>
+		</section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery.min.js"><\/script>')</script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+  </body>
 </html>

@@ -1,79 +1,47 @@
-﻿#body {
-	background-color: #F6F6F0;		
-	margin: 0px;
-	padding: 0px;
+body {
+	position: relative;
+	padding: 20px;
+	background-color: #fff! important;
+	color: #000 !important;
 }
 
-#pageContainer {
-    margin: 0px;
-	padding: 0px;
-	width: 100%;
-	height:100%;
-}
-#topmenu {
-	margin: 0px;
-	padding: 0px;
+.content section {
+  padding: 0px;
+  margin-bottom:20px;
+  /*height:750px;*/
 }
 
-#topDiv {
-	margin: 0px;
-	padding: 0px;
-	width: 100%;
-	height: 10%;
-	background-color: #297acc;
-	background-image: url('images/logo.jpg');
-	float: left;
-	position: fixed;
+/* Demo stuff */
+
+.nav .active {
+  text-decoration: underline;
+  background-color: #e6f2ff!important;
 }
 
-.bottomPosMenu {
-	
-	margin: 0px;
-	padding: 0px;
-	border: 0;	
-	text-align: right;
-	vertical-align: bottom;
+
+h2 {
+  padding-top: 0;
+  padding-bottom: 10px;
+  margin-top: 0;
+  margin-top: 0;
 }
 
-#leftDiv {	
-	margin: 0px;
-	padding-bottom: 100%;
-	width: 15%;
-	background: #2e266b;
-	float: left;
-	height: 100%;
-	position: fixed;	
+img {
+  max-width: 100%;
+  padding-bottom: 20px;
 }
 
-.leftDivMenu {
-	vertical-align: middle;
+p {
+  padding-bottom: 10px;
 }
 
-#contentDiv {
-	margin: 0px;
-	padding-left: 0%;
-	padding-right: 0%;
-	padding-top: 0%;
-	padding-bottom: 100%;
-	width: 84%;
-	height: 85%;
-	background-color: F6F6F0;
-	display: block;
-	float: right;
+.jumbotron-ust
+{
+	background-color:#0088cc!important;
+	color:#fff!important;
 }
 
-#footerDiv {
-	
-	margin: 0px;
-	padding: 0px;
-	border: 0;
-	float: left;
-	width: 85%;	
-	height: 5%; 
-	background: #2F2827;
-	text-align: right;
-}
-
-#logo {
-	text-align:center;
+.jumbotron-ust h1
+{
+	text-shadow: 1px 1px 15px #004466;
 }
