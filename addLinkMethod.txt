@@ -1,0 +1,94 @@
+/**
+	 * Creates a link with a Class or a Member and this UserStory
+	 * @param sourceAbsolutePath : The path of the file to be linked
+	 * @param memberName		 : The member name if any
+	 * @param parentMemberName	 : The parent member name
+	 */
+	public void addLink(String sourceAbsolutePath, String memberName, String parentMemberName)
+	{		
+		
+		String sourcePath = Controller.toRelativePath(sourceAbsolutePath);
+		LogWriter.info("UserStory: addLink: New Path: " + sourcePath);
+		
+		Link classLink = null;
+		boolean createClassLink = false;
+
+		// If the Parent Member Name is not "", we're going to add a Method Link.
+		// Thus, we need to make sure this class has not already been linked.
+		if (!parentMemberName.equals(""))
+		{
+			LogWriter.info("UserStory: addLink: Started with Class Name: " + parentMemberName + " and Method Name: " + memberName);
+			
+			// Find existing Class Link (if it exists)
+			for (Link l : this.getLinks())
+			{
+				if (parentMemberName.equals(l.getClassName()) && sourcePath.equals(l.getSourceFileRelativePath()))
+				{
+					LogWriter.info("UserStory: addLink: Detected existing Class Link (method: YES)");
+					classLink = l;
+				}
+			}
+			
+			// If there is no existing Class Link, we need to create it (thus this becomes true)
+			createClassLink = (classLink == null);
+			if (createClassLink)
+			{
+				LogWriter.info("UserStory: addLink: Creating new Class Link " + parentMemberName + " with method");
+				classLink = new Link(sourcePath, parentMemberName);
+				if(!memberName.equals("")){
+				LogWriter.info("UserStory: addLink: Adding method " + memberName + " to new class Link " + classLink.toString());
+					classLink.addMethod(memberName);
+				}
+				this.links.add(classLink);
+				LogWriter.info("UserStory: addLink: About to save new ClassLink with Method");
+				try { this.saveToDisk(); } catch (IOException e) {
+					e.printStackTrace();
+				}
+				LogWriter.info("UserStory: addLink: User Story \""+this.getName()+"\" Saved with new Link: " + classLink.toString());
+				return;
+			}
+			else
+			{
+				// Find whether method is already linked
+				for (String method : classLink.getMethodNameList())
+				{
+					if (method.equals(memberName))
+					{
+						LogWriter.info("UserStory: addLink: Detected duplicate method name \"" + memberName 
+								+ "\" on existing Class Link with name " + parentMemberName + ". Aborting");
+						return;
+					}
+				}
+				if(!memberName.equals("")){
+					LogWriter.info("UserStory: addLink: Adding method " + memberName + " to existing class Link " + classLink.toString());
+					classLink.addMethod(memberName);
+				}
+				LogWriter.info("UserStory: addLink: About to save new ClassLink with Method");
+				try { this.saveToDisk(); } catch (IOException e) {e.printStackTrace(); }
+				LogWriter.info("UserStory: addLink: User Story \""+this.getName()+"\" Saved with new Link: " + classLink.toString());
+				return;
+			}
+			
+		}
+		else if(!memberName.equals(""))
+		{
+			LogWriter.info("UserStory: addLink: Started with Class Name: " + memberName);
+			// Find existing Class Link (if it exists)
+			for (Link l : this.getLinks())
+			{
+				if (memberName.equals(l.getClassName()) && sourcePath.equals(l.getSourceFileRelativePath()))
+				{
+					LogWriter.info("UserStory: addLink: Detected existing Class Link (method: NO). Aborting");
+					return;
+				}
+			}
+			
+			// If we haven't returned yet, there's no existing Class Link.
+			LogWriter.info("UserStory: addLink: Creating new Class Link " + memberName);
+			classLink = new Link(sourcePath, memberName);
+			this.links.add(classLink);
+			LogWriter.info("UserStory: addLink: About to save new ClassLink");
+			try { this.saveToDisk(); } catch (IOException e) {e.printStackTrace(); }
+			LogWriter.info("UserStory: addLink: User Story \""+this.getName()+"\" Saved with new Link: " + classLink.toString());
+			return;
+		}
