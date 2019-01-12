@@ -1,0 +1,325 @@
+	/**
+	 * Create marker if an error appears
+	 * Create link to UserStory if the UserStory exists
+	 */	
+	public static void annotationsErrorHandler(ArrayList<String> updatedClasses,String projectPath,String projectName){
+		if(updatedClasses.size() == 0){
+			UserStoryTreeView.setProgress(100);
+			return;
+		}
+		
+		//Keep backup
+		//sources is a HashMap that contains paths and source codes
+		Map<String,String> sources = new HashMap<String,String>();
+		for(String path : updatedClasses){
+			//Get the IFile from a path
+			IFile javaFile = MarkerManager.getIFileFromName(path);
+			if(javaFile != null){			
+				ICompilationUnit compilationUnit = (ICompilationUnit) JavaCore.create(javaFile);
+				try {
+					sources.put(javaFile.getFullPath().toString(),compilationUnit.getSource()+System.getProperty("line.separator"));
+				} catch (JavaModelException e) {
+					e.printStackTrace();
+				}
+			}
+			//Delete the markers. The new markers will be created
+			MarkerManager.deleteMarkers(path);
+		}
+		//BackUp list
+		if(BackUpAnnotations.backup.size() < 20){
+			BackUpAnnotations.backup.add((HashMap<String, String>) sources);
+		}else{
+			BackUpAnnotations.backup.remove(0);
+			BackUpAnnotations.backup.add((HashMap<String, String>) sources);
+		}
+		
+		if(projectPath == null || projectName == null||projectPath.equals("") || projectName.equals("")){
+			return;
+		}
+		//error handling
+		try {
+			searchFileForExceedingUserStories(updatedClasses, projectPath, projectName);			
+			searchFileForAnnotations(updatedClasses, projectPath, projectName);
+		} catch (JavaModelException | IOException e){
+			e.printStackTrace();
+		}
+		
+	}
+	/**
+	 * Deletes Links to UserStories if the are no annotations to class or creates annotations 
+	 * @param updatedClasses		: The path of the class that needs to be checked
+	 * @param projectPath			: The path of the project that contains the class
+	 * @param projectName 			: The name of the project that contains the class
+	 * @throws IOException
+	 * @throws JavaModelException
+	 */
+	private static void searchFileForExceedingUserStories(ArrayList<String> updatedClasses,final String projectPath,final String projectName) throws IOException, JavaModelException{
+		
+		ArrayList<String> paths = new ArrayList<String>(); //There might be a changes in udpateClasses (avoid ConcurrentModificationException)
+		paths.addAll(updatedClasses);
+		int progress = 0;
+		for(final String path : paths){
+			progress++;
+			UserStoryTreeView.setProgress(((progress/paths.size())*100)/2);//The progress of checking java files. This method will fill only the 50%
+			
+			if(!lockedPaths.contains(path)){//If the this path is not locked
+				final ArrayList<UserStory> linkedUs = new ArrayList<UserStory>(); //The members that should have the Annotation in the file (The links exist in DB)
+				linkedUs.addAll(Database.getUserStoriesLinkedToJavaFile(path));
+				if(linkedUs.size() != 0){ //if there are UserStories 
+					if(UserStoryTreeView.currentOpenProjectName == ""){
+						return;
+					}
+					IFile javaFile = MarkerManager.getIFileFromName(path);
+					if(javaFile == null){
+						return;
+					}
+					ICompilationUnit compilationUnit = (ICompilationUnit) JavaCore.create(javaFile);
+					//If a class or method has been deleted the link will be deleted too
+					checkIfATypeHasBeenDeleted(compilationUnit.getAllTypes(), linkedUs);
+					
+					ICompilationUnit wcu = compilationUnit.getWorkingCopy(new NullProgressMonitor());
+				    final ASTParser parser = ASTParser.newParser(AST.JLS3);
+				    parser.setSource(wcu);	    
+				    final CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
+				    final AST ast = astRoot.getAST();
+				    final ASTRewrite rewriter = ASTRewrite.create(ast);
+				    astRoot.accept(new ASTVisitor() {
+				    	@SuppressWarnings("unchecked")
+						@Override
+				    	public boolean visit(TypeDeclaration  node) {				    		
+				    		//lr contains annotations + private
+				    		ListRewrite lr = rewriter.getListRewrite(node, ((TypeDeclaration)node).getModifiersProperty());
+				    		NormalAnnotation anno = null;
+				    		for(int i = 0; i < lr.getOriginalList().size(); i++) {
+				    			if(lr.getOriginalList().get(i) instanceof NormalAnnotation) {
+				    				if(((NormalAnnotation)lr.getOriginalList().get(i)).getTypeName().toString().equals("UserStoryLink")) {
+				    					anno = ((NormalAnnotation)lr.getOriginalList().get(i));
+				    				}				    				
+				    			}
+				    		}
+			    			int typeLine = astRoot.getLineNumber(node.getStartPosition());
+				    		if(anno == null) {
+				    			for(UserStory us : linkedUs){
+			            			int i = 0;
+			            			while(i < us.getLinks().size()){			            				
+			            				if(us.getLinks().get(i).getClassName().equals(((TypeDeclaration)node).getName().toString())){	 
+			            					if(!PreferencesManager.getAutoDeleteLinkOnError()) {
+			            						MarkerManager.createMarker("There is no Annotation(UserStoryLink) while there "
+			            							+ "is a Link to UserStoryTreeView( "+us.getUid()+" ). Add the Annotation or delete the Link",node.getName().toString(),"",typeLine,projectName,path,us.getUid(),MarkerManager.MARKER_TYPE1);	                					
+			            					}else {
+			            						us.getLinks().remove(i);
+			            						try {
+													us.saveToDisk();
+												} catch (IOException e) {
+													e.printStackTrace();
+												}
+			            						i--;
+			            					}
+			                			}
+			            				i++;
+			            			}
+			            		}				    			
+				    		}else {				    			
+				    			ArrayList<String> uids = new ArrayList<String>();
+				    			if(anno.values().size() > 0) {
+				    				List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)anno.values().get(0)).getValue()).expressions();				    			
+					    			for(int i = 0; i < expr.size(); i++) {
+					    				uids.add(expr.get(i).getLiteralValue());				    				
+					    			}	
+				    			}
+				    			for(UserStory us : linkedUs){
+			            			if(!uids.contains(us.getUid())){
+			                			int i = 0;
+			                			while(i < us.getLinks().size()){
+			                				if(us.getLinks().get(i).getClassName().equals(node.getName().toString())){	    
+			                					if(!PreferencesManager.getAutoDeleteLinkOnError()) {
+			                						MarkerManager.createMarker("There is a Link to UserStoryTreeView(UserStory : "+us.getUid()+") while the "
+			                							+ "existing Annotation doesn't contain this uid. Add the uid to the Annotation or delete the Link",node.getName().toString(),"",typeLine,projectName,path,us.getUid(),MarkerManager.MARKER_TYPE1);               					
+			                					}else {
+			                						us.getLinks().remove(i);
+			                						try {
+														us.saveToDisk();
+													} catch (IOException e) {
+														e.printStackTrace();
+													}
+			                						i--;
+			                					}
+				                			}
+			                				i++;
+			                			}
+			            			}
+				    			}				    			
+				    		}
+				    		return true;				    		
+				    	}
+				    	@Override
+				    	public boolean visit(MethodDeclaration  node) {
+				    		ASTNode parent = node.getParent();
+				    		//lr contains annotations + private
+				    		ListRewrite lr = rewriter.getListRewrite(node, ((MethodDeclaration)node).getModifiersProperty());
+				    		NormalAnnotation anno = null;
+				    		for(int i = 0; i < lr.getOriginalList().size(); i++) {
+				    			if(lr.getOriginalList().get(i) instanceof NormalAnnotation) {
+				    				if(((NormalAnnotation)lr.getOriginalList().get(i)).getTypeName().toString().equals("UserStoryLink")) {
+				    					anno = ((NormalAnnotation)lr.getOriginalList().get(i));
+				    				}				    				
+				    			}
+				    		}
+			    			int methodLine = astRoot.getLineNumber(node.getStartPosition());
+				    		if(anno == null) {
+				    			for(UserStory us : linkedUs){				    				
+			            			int i = 0;
+			            			while(i < us.getLinks().size()){
+			            				if(us.getLinks().get(i).getClassName().equals(((TypeDeclaration)node.getParent()).getName().toString())){
+			            					if(us.getLinks().get(i).getMethodNameList().contains(node.getName().toString())) {
+				            					if(!PreferencesManager.getAutoDeleteLinkOnError()) {
+				            						MarkerManager.createMarker("There is no Annotation(UserStoryLink) while there "
+				            							+ "is a Link to UserStoryTreeView( "+us.getUid()+" ). Add the Annotation or delete the Link",node.getName().toString(),"",methodLine,projectName,path,us.getUid(),MarkerManager.MARKER_TYPE1);	                					
+				            					}else {
+				            						us.getLinks().remove(i);
+				            						try {
+														us.saveToDisk();
+													} catch (IOException e) {
+														e.printStackTrace();
+													}
+				            						i--;
+				            					}
+			            					}
+			                			}
+			            				i++;
+			            			}
+			            		}				    			
+				    		}else {
+				    			ArrayList<String> uids = new ArrayList<String>();
+				    			if(anno.values().size() > 0) {
+				    				List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)anno.values().get(0)).getValue()).expressions();				    			
+					    			for(int i = 0; i < expr.size(); i++) {
+					    				uids.add(expr.get(i).getLiteralValue());				    				
+					    			}	
+				    			}	
+				    			for(UserStory us : linkedUs){
+			            			if(!uids.contains(us.getUid())){
+			                			int i = 0;
+			                			while(i < us.getLinks().size()){
+			                				if(us.getLinks().get(i).getClassName().equals(node.getName().toString())){	    
+			                					if(!PreferencesManager.getAutoDeleteLinkOnError()) {
+			                						MarkerManager.createMarker("There is a Link to UserStoryTreeView(UserStory : "+us.getUid()+") while the "
+			                							+ "existing Annotation doesn't contain this uid. Add the uid to the Annotation or delete the Link",node.getName().toString(),"",methodLine,projectName,path,us.getUid(),MarkerManager.MARKER_TYPE1);               					
+			                					}else {
+			                						us.getLinks().remove(i);
+			                						try {
+														us.saveToDisk();
+													} catch (IOException e) {
+														e.printStackTrace();
+													}
+			                						i--;
+			                					}
+				                			}
+			                				i++;
+			                			}
+			            			}
+				    			}				    			
+				    		}
+				    		return true;
+				    	}
+				    });
+				}
+			}
+		}
+	}
+	/**
+	 * Creates links on a UserStory by reading the Annotations 
+	 * or deletes the Annotation on a Class if the Link is missing from the UserStoryTreeView 
+	 * @param updatedClasses 	  : The path of the class that needs to be checked
+	 * @param projectPath		  : The path of the project that contains the class
+	 * @param projectName		  : The name of the project that contains the class
+	 * @throws JavaModelException
+	 */
+	private static void searchFileForAnnotations(ArrayList<String> updatedClasses,final String projectPath,final String projectName) throws JavaModelException{	
+		ArrayList<String> paths = new ArrayList<String>(); //There will be changes in udpateClasses (avoid ConcurrentModificationException)
+		paths.addAll(updatedClasses);
+		int progress = 0;
+		for(final String path : paths){			
+			progress++;
+			UserStoryTreeView.setProgress((((progress/paths.size())*100)/2) + 50);//The progress of checking the java files. This method will fill only the 
+			
+			if(!lockedPaths.contains(path)){//If the path is not locked
+				updatedClasses.remove(path);
+				if(UserStoryTreeView.currentOpenProjectName == ""){
+					return;
+				}
+
+        		IFile javaFile1 = MarkerManager.getIFileFromName(path);
+        		if(javaFile1 == null){
+        			return;
+        		}			
+        		fixImport(javaFile1);        		
+        		
+				IFile javaFile = MarkerManager.getIFileFromName(path);
+				if(javaFile == null){
+					return;
+				}			
+				ICompilationUnit compilationUnit = (ICompilationUnit) JavaCore.create(javaFile);
+				ICompilationUnit wcu = compilationUnit.getWorkingCopy(new NullProgressMonitor());
+			    final ASTParser parser = ASTParser.newParser(AST.JLS3);
+			    parser.setSource(wcu);	    
+			    final CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
+
+			    astRoot.accept(new ASTVisitor() {
+			    	@SuppressWarnings("unchecked")
+					@Override
+			    	public boolean visit(NormalAnnotation  node) {
+			    		ASTNode parent = node.getParent();
+			    		//UserStoryLink annotation
+			    		if(node.getTypeName().toString().equals("UserStoryLink")) {
+			    			int annoLine = astRoot.getLineNumber(node.getStartPosition());
+			    			//All the uids as StringLiteral
+			    			ArrayList<String> uids = new ArrayList<String>();
+			    			if(node.values().size() > 0) {
+			    				List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)node.values().get(0)).getValue()).expressions();				    			
+				    			for(int i = 0; i < expr.size(); i++) {
+				    				uids.add(expr.get(i).getLiteralValue());				    				
+				    			}	
+			    			}
+			    			for( String uid : uids){ 
+	                    		UserStory parentOfLink = Database.getUserStoryByUID(uid);
+	                    		boolean linkExists = false;//check if link exists 
+	                			if(parentOfLink == null){//if not even the UserStory exists create marker	
+	                				if(parent instanceof TypeDeclaration) {
+	                					MarkerManager.createMarker("There is no UserStory with this uid", ((TypeDeclaration)parent).getName().toString(), "", annoLine, projectName, path, uid, MarkerManager.MARKER_TYPE2);
+	                				}else if(parent instanceof MethodDeclaration) {
+	                					MarkerManager.createMarker("There is no UserStory with this uid",((TypeDeclaration)parent.getParent()).getName().toString(), ((MethodDeclaration)parent).getName().toString(), annoLine, projectName, path, uid, MarkerManager.MARKER_TYPE2);
+	                				}
+	                			}else if(parentOfLink != null){//if the UserStory exists create the link
+	                				int i = 0;
+	                				while(parentOfLink.getLinks().size() < i){//check if Link exists
+	                					Link temp = parentOfLink.getLinks().get(i);
+	                					if(parent instanceof TypeDeclaration) {
+	                						if(temp.getSourceFileAbsPath().equals(path) && temp.getClassName().equals(((TypeDeclaration)parent).getName().toString())){
+	                							linkExists = true;
+	                							break;
+	                						}
+		                				}else if(parent instanceof MethodDeclaration) {
+		                					if(temp.getSourceFileAbsPath().equals(path) && temp.getClassName().equals(((TypeDeclaration)parent.getParent()).getName().toString())){
+		                						linkExists = true;
+		                						break;
+		                					}
+		                				}
+	                					i++;
+	                				}
+	                				if(!linkExists){//if not create it
+	                					if(parent instanceof TypeDeclaration) {
+	                						Database.addLinksFromJavaFiles(path,uid.replace("\"",""), "",((TypeDeclaration)parent).getName().toString(),projectPath);
+		                				}else if(parent instanceof MethodDeclaration) {		                					
+		                					Database.addLinksFromJavaFiles(path,uid.replace("\"",""), ((MethodDeclaration)parent).getName().toString(),((TypeDeclaration)parent.getParent()).getName().toString(),projectPath);
+		                				}
+	                				}
+	                			}
+	                    	}
+			    		}
+			    		return true;
+					}
+			    });
+			}
+		}
+	}
