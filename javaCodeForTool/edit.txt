@@ -1,0 +1,78 @@
+/**
+	 * Edit a User Story's properties
+	 * @param oldUs : The UserStory as it is without the changes
+	 * @param newUs : The UserStory to be created
+	 */
+	public void edit(Model oldUs,Model newUs)
+	{
+		if(newUs instanceof UserStory)
+		{ 
+			//While editing the error handler must not make any changes 
+			for(Link l : ((UserStory)oldUs).getLinks()) {
+				WriteAnnotations.lockedPaths.add(l.getSourceFileAbsPath());
+			}
+		}
+		this.deleteModel(oldUs,false); // Deletes from DB and disk. 
+		Model parent = null;
+		
+		try
+		{
+			newUs.setName(uniqueName(newUs.getName(),newUs.getParentAbsolutePath())); // give it a unique name			
+			String absPath = "";
+			
+			//If parent is the root node
+			if(newUs.getParentAbsolutePath().equals(UsSystem.ROOT_ABSPATH))
+			{ 
+				absPath = storiesAbsolutePath + "\\" + newUs.getName(); // change the absolute path
+				parent = rootSystem; //set the parent
+			}
+			else
+			{
+				absPath = newUs.getParentAbsolutePath() + "\\" + newUs.getName(); // change the absolute path
+				parent = getModel(newUs.getParentAbsolutePath()); // set the parent
+			}
+			newUs.setAbsolutePath(absPath); // Sets the new absolute path 
+			HistoryManager.createHistory(newUs.getCopy(), oldUs.getCopy(), HistoryManager.editHistory); // Create an edit history for undo-redo
+			
+			// Set the old UserStory to new. 
+			//In this way we will just update the old UserStory in the view
+			oldUs.setName(newUs.getName()); 
+			oldUs.setAbsolutePath(newUs.getAbsolutePath());
+			db.add(oldUs); // Add the updated UserStory to DB (had been deleted)
+			oldUs.setUid(Database.uidGenerator(oldUs));
+			if(parent != null && parent instanceof UsSystem)
+			{
+				((UsSystem)parent).addChild(oldUs);
+			}
+			oldUs.saveToDisk(oldUs.getAbsolutePath()); // Save to Disk
+			
+			// If Model is a UsSystem 
+			if(oldUs instanceof UsSystem)
+			{ 
+				adjustPathsToParentChange((UsSystem) oldUs); // change children's variables to correspond to the parent changes
+			}
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		
+		// UserStory objects got some extra variables to set
+		if(newUs instanceof UserStory)
+		{ 
+			((UserStory)oldUs).setActors(((UserStory)newUs).getActors());
+			((UserStory)oldUs).setTestCases(((UserStory)newUs).getTestCases());
+			try {
+				oldUs.saveToDisk(oldUs.getAbsolutePath()); // Save to Disk
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			//Restore the Annotations that have been deleted by the deleteModel(Model) 
+			for(Link l : ((UserStory)oldUs).getLinks()) {
+				WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), "", true);
+				for(String member : l.getMethodNameList()) {
+					WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), member,true);		
+				}
+			}
+		}
+	}

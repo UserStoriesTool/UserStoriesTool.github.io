@@ -1,0 +1,225 @@
+/**
+* Add the Annotation to a CompilationUnit
+* @param cu 		 : The CompilationUnit
+* @param uids 		 : The uids to add
+* @param className  	 : The name of the class
+* @param memberName 	 : The name of the member
+* @param isClass 	 : IF true the Annotation will be add on a class
+* @throws JavaModelException
+* @throws MalformedTreeException
+* @throws BadLocationException
+*/
+private static void addAnnotationToCompilationUnit(ICompilationUnit cu,ArrayList<String> uids,final String className,final String memberName,final boolean isClass) throws JavaModelException, MalformedTreeException, BadLocationException {
+		parentNodeToAddAnnotation = null;
+		nodeToAddAnnotation = null;
+		parentNodeAnnotation = null;
+		nodeAnnotation = null;
+
+		ICompilationUnit wcu = cu.getWorkingCopy(new NullProgressMonitor());
+	    final ASTParser parser = ASTParser.newParser(AST.JLS3);
+	    parser.setSource(wcu);	    
+	    final CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
+	    if(astRoot.types().size() == 0) {//No class in file
+	    	return;
+	    }
+	    astRoot.accept(new ASTVisitor() {
+	    	@Override
+	    	public boolean visit(MethodDeclaration node) {
+	    		if(isClass) {
+	    			return false;
+	    		}
+				if(node.getName().toString().equals(memberName)) {
+					if(((TypeDeclaration)node.getParent()).getName().toString().equals(className)) {
+						parentNodeToAddAnnotation = (TypeDeclaration) node.getParent();
+						nodeToAddAnnotation = node;
+						return false;
+					}
+				}
+				return true;			
+			}	    	
+	    });
+	    astRoot.accept(new ASTVisitor() {	    	
+	    	@Override
+	    	public boolean visit(TypeDeclaration node) {  
+	    		if(isClass == false) {
+	    			return false;
+	    		}
+				if(node.getName().toString().equals(className)) {
+					parentNodeToAddAnnotation = node;		    		
+					return false;
+				}
+				return true;			
+			}
+	    });
+	    astRoot.accept(new ASTVisitor() {	    	
+	    	@Override
+	    	public boolean visit(NormalAnnotation  node) {	    		
+	    		if(node.getTypeName().toString().equals("UserStoryLink")) {
+	    			if(node.getParent().equals(parentNodeToAddAnnotation)) {
+	    				parentNodeAnnotation = node;
+	    			}else if(node.getParent().equals(nodeToAddAnnotation)) {
+	    				nodeAnnotation = node;
+	    			}
+	    		}
+	    		return true;
+			}
+	    });
+	    // create a ASTRewrite
+	    final AST ast = astRoot.getAST();
+	    final ASTRewrite rewriter = ASTRewrite.create(ast);
+	    final NormalAnnotation usAnnotation = astRoot.getAST().newNormalAnnotation();
+	    final NormalAnnotation usAnnotationOnMethod = astRoot.getAST().newNormalAnnotation();
+    	usAnnotation.setTypeName(astRoot.getAST().newName("UserStoryLink")); 
+    	usAnnotationOnMethod.setTypeName(astRoot.getAST().newName("UserStoryLink")); 
+	    
+    	ArrayList<String> uidsRestore = new ArrayList<String>();
+
+		//Add annotation to the parent class or the subclass
+    	if(((TypeDeclaration)astRoot.types().get(0)).equals(parentNodeToAddAnnotation)) {//if its the parent class
+    		//The list with every node in the parent class
+		    final ListRewrite clistRewrite = rewriter.getListRewrite(astRoot, CompilationUnit.TYPES_PROPERTY);		    
+    	    if(parentNodeAnnotation != null) {//An annotation already exists, delete it and recreate it with the right uids
+    	    	if(parentNodeAnnotation.values().size() > 0) {
+	    	    	List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)parentNodeAnnotation.values().get(0)).getValue()).expressions();
+	    	    	for(int i = 0; i < expr.size(); i++) {
+	    	    		if(!uids.contains(expr.get(i).getLiteralValue())) {
+	    	    			uidsRestore.add(expr.get(i).getLiteralValue());
+	    	    		}
+	    	    	}
+    	    	}
+    	    	rewriter.getListRewrite(parentNodeToAddAnnotation,parentNodeToAddAnnotation.getModifiersProperty()).remove(parentNodeAnnotation, null);
+    	    }
+	    	uidsRestore.addAll(uids);
+		    usAnnotation.values().add(createUidsOfAnnotation(ast,uidsRestore));
+		    clistRewrite.insertAt(usAnnotation, 0 ,null);
+    	}else {//if the parent class is a subclass
+    		//The list with every node in the sub class
+    		final ListRewrite clistRewrite = rewriter.getListRewrite(((TypeDeclaration)astRoot.types().get(0)),((TypeDeclaration)astRoot.types().get(0)).getBodyDeclarationsProperty());
+    	    if(parentNodeAnnotation != null) {//An annotation already exists, delete it and recreate it with the right uids
+    	    	if(parentNodeAnnotation.values().size() > 0) {
+	    	    	List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)parentNodeAnnotation.values().get(0)).getValue()).expressions();//A list with the uids
+	    	    	for(int i = 0; i < expr.size(); i++) {
+	    	    		if(!uids.contains(expr.get(i).getLiteralValue())) {
+	    	    			uidsRestore.add(expr.get(i).getLiteralValue());
+	    	    		}
+	    	    	}
+    	    	}
+    	    	rewriter.getListRewrite(parentNodeToAddAnnotation,parentNodeToAddAnnotation.getModifiersProperty()).remove(parentNodeAnnotation, null);
+    	    }
+	    	uidsRestore.addAll(uids);
+		    usAnnotation.values().add(createUidsOfAnnotation(ast,uidsRestore));
+		    clistRewrite.insertBefore(usAnnotation, parentNodeToAddAnnotation ,null);
+    	}
+    	uidsRestore.clear();
+    	if(isClass == false) {
+			//Add annotation to the method
+		    final ListRewrite mlistRewrite = rewriter.getListRewrite(parentNodeToAddAnnotation,parentNodeToAddAnnotation.getBodyDeclarationsProperty());
+		    if(nodeAnnotation != null) {
+		    	if(parentNodeAnnotation.values().size() > 0) {
+			    	List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)nodeAnnotation.values().get(0)).getValue()).expressions();
+	    	    	for(int i = 0; i < expr.size(); i++) {
+	    	    		if(!uids.contains(expr.get(i).getLiteralValue())) {
+	    	    			uidsRestore.add(expr.get(i).getLiteralValue());
+	    	    		}
+	    	    	}
+		    	}
+		    	rewriter.getListRewrite(nodeToAddAnnotation,nodeToAddAnnotation.getModifiersProperty()).remove(nodeAnnotation, null);
+		    }	
+	    	uidsRestore.addAll(uids); 
+	    	usAnnotationOnMethod.values().add(createUidsOfAnnotation(ast,uidsRestore));
+		    mlistRewrite.insertBefore(usAnnotationOnMethod,nodeToAddAnnotation, null);    
+    	}
+    	
+	    final TextEdit edits = rewriter.rewriteAST();
+	    // apply the text edits to the compilation unit
+	    IDocument  document = new Document(wcu.getSource());
+	    edits.apply(document);
+	    IBuffer buffer = wcu.getBuffer();
+	    buffer.setContents( document.get());
+	    wcu.reconcile(ICompilationUnit.NO_AST, false, null, null);
+	    
+	    // Commit changes
+	    wcu.commitWorkingCopy(false, null);
+	    wcu.discardWorkingCopy();	    
+	}
+	/**Remove the uid from an Annotation. 
+	 * 
+	 * @param path 		 : The file that contains the Class
+	 * @param uid 		 : The uid to remove 
+	 * @param className  : The name of the Class
+	 * @param memberName : The name of the member if any
+	 * @throws JavaModelException 
+	 */
+	public static void deleteAnnotation(String path,final String uid,final String className, final String memberName) throws JavaModelException{
+		IFile javaFile = MarkerManager.getIFileFromName(path);
+		if(javaFile == null){
+			return;
+		}
+		
+		ICompilationUnit cu = (ICompilationUnit) JavaCore.create(javaFile);
+		ICompilationUnit wcu = cu.getWorkingCopy(new NullProgressMonitor());
+	    final ASTParser parser = ASTParser.newParser(AST.JLS3);
+	    parser.setSource(wcu);	    
+	    final CompilationUnit astRoot = (CompilationUnit) parser.createAST(null);
+
+	    final AST ast = astRoot.getAST();
+	    final ASTRewrite rewriter = ASTRewrite.create(ast);	    		
+		
+	    astRoot.accept(new ASTVisitor() {
+	    	@SuppressWarnings("unchecked")
+			@Override
+	    	//all the annotations in the file
+	    	public boolean visit(NormalAnnotation node) {
+	    		ASTNode parent = node.getParent();		    		
+	    		//if its our annotation
+	    		if(node.getTypeName().toString().equals("UserStoryLink")) {
+	    			ArrayList<String> uidsRestore = new ArrayList<String>();
+	    			if(node.values().size() > 0) {
+	    				List<StringLiteral> expr = ((ArrayInitializer)((MemberValuePair)node.values().get(0)).getValue()).expressions();				    			
+		    			for(int i = 0; i < expr.size(); i++) {
+		    				uidsRestore.add(expr.get(i).getLiteralValue());				    				
+		    			}	
+	    			}
+	    			if(uidsRestore.remove(uid)) {	    
+	    				final NormalAnnotation usAnnotation = astRoot.getAST().newNormalAnnotation();
+    	    	    	usAnnotation.setTypeName(astRoot.getAST().newName("UserStoryLink")); 
+    	    		    usAnnotation.values().add(createUidsOfAnnotation(ast,uidsRestore));
+    	    		    
+			    		if(parent instanceof TypeDeclaration) {
+			    			if(className.equals("") ||( className.equals(((TypeDeclaration)parent).getName().toString()) && memberName.equals(""))) {
+				    			if(((TypeDeclaration)astRoot.types().get(0)).equals(parent)) {
+		    	    		    	rewriter.getListRewrite(parent,((TypeDeclaration)parent).getModifiersProperty()).remove(node, null);	
+		    	    		    	rewriter.getListRewrite(astRoot, CompilationUnit.TYPES_PROPERTY).insertAt(usAnnotation, 0, null);
+			    		    	}else {//fix parent = parent.getParent()			    		    		
+				    		    	rewriter.getListRewrite(parent,((TypeDeclaration)parent).getModifiersProperty()).remove(node, null);
+				    		    	rewriter.getListRewrite(((TypeDeclaration)astRoot.types().get(0)),((TypeDeclaration)astRoot.types().get(0)).getBodyDeclarationsProperty()).insertBefore(usAnnotation, parent, null);
+			    		    	}
+			    			}
+			    		}else if(parent instanceof MethodDeclaration) {
+			    			if(memberName.equals("") || memberName.equals(((MethodDeclaration)parent).getName().toString())) {
+				    			rewriter.getListRewrite(parent,((MethodDeclaration)parent).getModifiersProperty()).remove(node, null);
+				    			rewriter.getListRewrite(parent,((MethodDeclaration)parent).getModifiersProperty()).insertAt(usAnnotation, 0, null);
+			    			}
+			    		}
+	    			}
+	    		}
+	    		return true;
+	    	}
+	    });
+	    final TextEdit edits = rewriter.rewriteAST();
+	    // apply the text edits to the compilation unit
+	    IDocument  document = new Document(wcu.getSource());
+	    try {
+			edits.apply(document);
+		} catch (MalformedTreeException | BadLocationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	    IBuffer buffer = wcu.getBuffer();
+	    buffer.setContents( document.get());
+	    wcu.reconcile(ICompilationUnit.NO_AST, false, null, null);
+	    
+	    // Commit changes
+	    wcu.commitWorkingCopy(false, null);
+	    wcu.discardWorkingCopy();
+	}	

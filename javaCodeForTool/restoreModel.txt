@@ -1,0 +1,101 @@
+/**
+	 * Restores a model to database
+	 * @param add 			: The model to restore
+	 * @param parentAbsPath : The path of the parent if any
+	 */
+	public void restoreModel(Model add,String parentAbsPath)
+	{
+		try {
+			//If to restore Link 
+			if(add instanceof LinkStub){				
+				Model parent = null;
+				//The link to restore is a Method Link
+				if(((LinkStub)add).getLinkType() == LinkStub.TYPE_METHOD){
+					//The parent UserStory that contains the parent Class Link(LinkStub)
+					parent = getModel(((LinkStub)add).parentUserStoryPath);	
+					String methodName = ((LinkStub)add).getName();
+
+					//The parent of a Method Link is a Class Link (LinkStub)
+					for(Link parentClassLink : ((UserStory)parent).getLinks()){
+						//If parent Class Link is found add it to the parent's children
+						if(parentClassLink.getClassName().equals(((LinkStub) add).getLinkReference().getClassName())){
+							parentClassLink.getMethodNameList().add(methodName);
+							try {
+								//Save the parent
+								((UserStory)parent).saveToDisk();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+							break;
+						}
+					}
+				//The link to restore is a Class Link
+				}else{
+					//The parent of a Class Link is a UserStory
+					parent = getModel(((LinkStub)add).getParentAbsolutePath());
+					//Add the Link to the UserStory's Link list.
+					((UserStory)parent).getLinks().add(((LinkStub)add).getLinkReference());
+					try {
+						((UserStory)parent).saveToDisk();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}
+			else{
+				Model parent;
+				//if a parent has been given, get the parent from DB
+				if(!parentAbsPath.equals("")){
+					//Give a Unique Name 
+					add.setName(uniqueName(add.getName(),parentAbsPath));
+					//Set the absolute path depending on the parent.
+					if(!parentAbsPath.equals(rootSystem.getAbsolutePath())){
+						add.setAbsolutePath(parentAbsPath + "\\" + add.getName());
+					}else{
+						add.setAbsolutePath(storiesAbsolutePath + "\\" + add.getName());
+					}		
+					//Set the parents absolute path.			
+					add.setParentAbsolutePath(parentAbsPath);
+					parent = this.getModel(parentAbsPath);	
+				//if no parent has been given, search for the parent that the Model has stored.
+				}else{
+					//Give a Unique Name 
+					add.setName(uniqueName(add.getName(),add.getParentAbsolutePath()));
+					//Set the absolute path depending on the parent.
+					if(!add.getParentAbsolutePath().equals(rootSystem.getAbsolutePath())){
+						add.setAbsolutePath(add.getParentAbsolutePath() + "\\" + add.getName());
+					}else{
+						add.setAbsolutePath(storiesAbsolutePath + "\\" + add.getName());
+					}
+					parent = this.getModel(add.getParentAbsolutePath());				
+				}
+				//If the parent is a UsSystem and not null
+				if(parent != null && parent instanceof UsSystem){
+					//Add the Model to the parent's children
+					((UsSystem)parent).addChild(add);	
+					db.add(add);				
+				}else{
+					LogWriter.info("Database(): restoreModel: Something went wrong");
+				}
+				//Generate a new uid.
+				add.setUid(uidGenerator(add));
+				//Save to disk.
+				add.saveToDisk(add.getAbsolutePath());
+				//If the Model is a UserStory
+				if(add instanceof UserStory) {
+					//Restore all the Annotations in the java file
+					for(Link l : ((UserStory)add).getLinks()) {						
+						WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(),"",true);
+						for(String nameMember : l.getMethodNameList())
+						WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(), nameMember,true);
+					}
+				}
+				//If its a UsSystem
+				if(add instanceof UsSystem)
+					//Children's variables about the parent should be updated.
+					adjustPathsToParentChange((UsSystem) add);			
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}

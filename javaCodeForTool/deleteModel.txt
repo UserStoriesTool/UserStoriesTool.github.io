@@ -1,0 +1,84 @@
+	/**
+	 * Deletes Models from the Database
+	 * @param remove 		  : The Models to be deleted
+	 * @param unclockTheFiles : Keeping locked the files will prevent from the AnnotationsErrorHandler for searching for errors
+	 */
+	public void deleteModel(ArrayList<Model> remove,boolean unclockTheFiles)
+	{
+		for(Model deleteThis : remove){			
+			if(deleteThis instanceof LinkStub){
+				Model parent = null; //The parent of the deleted Model
+				//The Model to delete is a LinkStub type of Method
+				if(((LinkStub)deleteThis).getLinkType() == LinkStub.TYPE_METHOD){
+					parent = getModel(((LinkStub)deleteThis).parentUserStoryPath);//The parent UserStory of the LinkStub	
+					String methodName = ((LinkStub)deleteThis).getName();
+					try {
+						//Delete the Annotation
+						WriteAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),methodName);
+					} catch (JavaModelException e1) {
+						e1.printStackTrace();
+					}
+					//Remove the Link from the parents List
+					((LinkStub)deleteThis).getLinkReference().getMethodNameList().remove(methodName);					
+				}else{//The model is a LinkStub type of Class
+					parent = getModel(((LinkStub)deleteThis).getParentAbsolutePath());//The parent UserStory of the LinkStub
+					try {
+						//Delete the Annotation
+						WriteAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),null);
+					} catch (JavaModelException e1) {
+						e1.printStackTrace();
+					}
+					//Remove the Link from the parents List
+					((UserStory)parent).getLinks().remove(((LinkStub)deleteThis).getLinkReference());
+					try {
+						//Save the parent to disk
+						((UserStory)parent).saveToDisk();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			//The Model is UserStory or UsSystem
+			}else{
+				//First delete the file of the Model
+				File f = new File(deleteThis.getAbsolutePath());		
+				if(f.isDirectory()){			
+					deleteFilesInDir(deleteThis.getAbsolutePath());
+				}else{
+					f.delete();
+				}
+				ArrayList<Model> children = new ArrayList<Model>(); //All the UserStories to be deleted (children and parent)
+				children.add(deleteThis);				
+				children = getAllUS(children);				
+				for(Model temp : children)
+				{
+					//For each UserStory delete the annotations(if any). 
+					if(temp instanceof UserStory){
+						try {														
+							WriteAnnotations.deleteAnnotation((UserStory) temp,null,null);
+						} catch (JavaModelException e){ 
+							e.printStackTrace();
+						}						
+					}
+				}
+				//Remove it from database
+				db.removeAll(children);
+				if(UserStoryTreeView.viewer != null) {
+					//Remove it from the view
+					UserStoryTreeView.viewer.remove(deleteThis);
+				}	
+				Model parent = this.getModel(deleteThis.getParentAbsolutePath());
+				if(deleteThis.getParentAbsolutePath().equals(rootSystem.getAbsolutePath())){
+					parent = rootSystem;
+				}
+				//Remove it from the parents list
+				if(parent != null){
+					if(parent instanceof UsSystem){
+						((UsSystem)parent).getChildrenList().remove(deleteThis);
+					}
+				}
+			}
+		}
+		if(unclockTheFiles) {
+			WriteAnnotations.lockedPaths.clear();
+		}
+	}

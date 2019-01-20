@@ -1,0 +1,114 @@
+public class QuickFixProcessor implements IMarkerResolutionGenerator  {
+
+	@Override
+	public IMarkerResolution[] getResolutions(IMarker mk) {		
+		try {
+			if(((int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_TYPE)) == MarkerManager.MARKER_TYPE1){ //2 types of markers 2 types of quick fix
+	            return new IMarkerResolution[] {
+	            		//There are 2 suggestions for the user
+	            		new QuickFix("Add the uid to the Annotation(will be created if needed)",(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_JAVA_FILE_PATH),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_USERSTORYUID),(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_CLASSNAME),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_MEMBERNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_TYPE),
+	            				(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_PROJECTNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_LINE),true),            
+	            		new QuickFix("Delete link : " + mk.getAttribute(IMarker.LOCATION),(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_JAVA_FILE_PATH),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_USERSTORYUID),(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_CLASSNAME),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_MEMBERNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_TYPE),
+	            				(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_PROJECTNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_LINE),false)
+	            };
+			}else{
+				return new IMarkerResolution[] {
+	            		//There are 2 suggestions for the user
+	            		new QuickFix("Create the missing UserStory",(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_JAVA_FILE_PATH),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_USERSTORYUID),(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_CLASSNAME),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_MEMBERNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_TYPE),
+	            				(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_PROJECTNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_LINE),true),            
+	            		new QuickFix("Delete annotation with link : " + mk.getAttribute(IMarker.LOCATION),(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_JAVA_FILE_PATH), 
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_USERSTORYUID),(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_CLASSNAME),
+	            				(String)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_MEMBERNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_TYPE),
+	            				(String) mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_PROJECTNAME),(int)mk.getAttribute(MarkerManager.MARKER_ATTRIBUTE_LINE),false)
+	            };
+			}
+         } catch (CoreException | NullPointerException e) {
+            return new IMarkerResolution[0];
+         }
+	}
+
+}
+public class QuickFix implements IMarkerResolution {
+	String label;
+	boolean create = false; //create Annotation( or the link) or delete the link( or the annotation)
+	String className = "";
+	String memberName = "";
+	String uid;
+	String path;
+	int type;
+	int line;
+	String projectName;
+	
+    QuickFix(String label,String filepath,String uid,String className,String memberName,int type,String projectName,int line,boolean createAnno) { 
+       this.label = label;
+       this.path = filepath;
+       this.uid = uid;
+       this.className = className;
+       this.memberName = memberName;
+       this.type = type;
+       this.projectName = projectName;
+       this.line = line;
+       this.create = createAnno;
+    }
+	public String getLabel() {
+       return label;
+    }
+	
+    public void run(IMarker marker) {
+    	//2 type of markers 2 solutions
+    	if(type == MarkerManager.MARKER_TYPE1){
+    		//if we want to create the annotation
+	    	if(create){	
+	    		try {
+	    			//creates the annotation on the right class or member
+	    			WriteAnnotations.addAnnotation(path,uid, className, memberName,true);	 
+	    			//deletes the marker
+					marker.delete();
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}    		
+	    	}else{// if we want to delete the link
+	    		//deletes the link that has no annotation
+	    		Database.deleteLink(uid, className, memberName);
+	    		try {
+					marker.delete();
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}
+	    	}
+    	}else{
+    		//create the link
+    		if(create){
+	    		try {
+	    			//creates a link if the annotation contains a uid while there is no link to the UserStory with this uid 
+	    			Database.addLinksFromJavaFiles(path,uid,memberName,className,ResourcesPlugin.getWorkspace().getRoot().getProject(projectName).getLocation().toString());
+	    			//delete the marker
+					marker.delete();
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}    		
+	    	}else{//delete the annotation because there is no link to that uid
+	    		try {
+	    			//delete the annotation or just remove the uid
+					WriteAnnotations.deleteAnnotation(path,uid, className, memberName);
+				} catch ( JavaModelException e1) {
+					e1.printStackTrace();
+				}
+	    		try {
+	    			//delete the marker
+					marker.delete();	    			
+				} catch (CoreException e) {
+					e.printStackTrace();
+				}
+	    	}
+    	}
+    	//refresh the view
+    	UserStoryTreeView.viewer.refresh();
+    }
+}
