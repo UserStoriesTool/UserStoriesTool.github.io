@@ -9,7 +9,7 @@
 		{ 
 			//While editing the error handler must not make any changes 
 			for(Link l : ((UserStory)oldUs).getLinks()) {
-				WriteAnnotations.lockedPaths.add(l.getSourceFileAbsPath());
+				writeAnnotations.lockedPaths.add(l.getSourceFileAbsPath());
 			}
 		}
 		this.deleteModel(oldUs,false); // Deletes from DB and disk. 
@@ -38,8 +38,9 @@
 			//In this way we will just update the old UserStory in the view
 			oldUs.setName(newUs.getName()); 
 			oldUs.setAbsolutePath(newUs.getAbsolutePath());
+			oldUs.setDescription(newUs.getDescription());
 			db.add(oldUs); // Add the updated UserStory to DB (had been deleted)
-			oldUs.setUid(Database.uidGenerator(oldUs));
+			oldUs.setUid(uidGenerator(oldUs));
 			if(parent != null && parent instanceof UsSystem)
 			{
 				((UsSystem)parent).addChild(oldUs);
@@ -69,9 +70,9 @@
 			}
 			//Restore the Annotations that have been deleted by the deleteModel(Model) 
 			for(Link l : ((UserStory)oldUs).getLinks()) {
-				WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), "", true);
+				writeAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), "", true);
 				for(String member : l.getMethodNameList()) {
-					WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), member,true);		
+					writeAnnotations.addAnnotation(l.getSourceFileAbsPath(), oldUs.getUid(), l.getClassName(), member,true);		
 				}
 			}
 		}

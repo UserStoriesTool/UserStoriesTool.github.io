@@ -1,4 +1,4 @@
-	/**
+/**
 	 * Deletes Models from the Database
 	 * @param remove 		  : The Models to be deleted
 	 * @param unclockTheFiles : Keeping locked the files will prevent from the AnnotationsErrorHandler for searching for errors
@@ -14,7 +14,7 @@
 					String methodName = ((LinkStub)deleteThis).getName();
 					try {
 						//Delete the Annotation
-						WriteAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),methodName);
+						writeAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),methodName);
 					} catch (JavaModelException e1) {
 						e1.printStackTrace();
 					}
@@ -24,7 +24,7 @@
 					parent = getModel(((LinkStub)deleteThis).getParentAbsolutePath());//The parent UserStory of the LinkStub
 					try {
 						//Delete the Annotation
-						WriteAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),null);
+						writeAnnotations.deleteAnnotation((UserStory) parent,((LinkStub) deleteThis).getLinkReference().getClassName(),null);
 					} catch (JavaModelException e1) {
 						e1.printStackTrace();
 					}
@@ -54,7 +54,7 @@
 					//For each UserStory delete the annotations(if any). 
 					if(temp instanceof UserStory){
 						try {														
-							WriteAnnotations.deleteAnnotation((UserStory) temp,null,null);
+							writeAnnotations.deleteAnnotation((UserStory) temp,null,null);
 						} catch (JavaModelException e){ 
 							e.printStackTrace();
 						}						
@@ -79,6 +79,6 @@
 			}
 		}
 		if(unclockTheFiles) {
-			WriteAnnotations.lockedPaths.clear();
+			writeAnnotations.lockedPaths.clear();
 		}
 	}

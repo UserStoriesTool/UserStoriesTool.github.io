@@ -85,9 +85,9 @@
 				if(add instanceof UserStory) {
 					//Restore all the Annotations in the java file
 					for(Link l : ((UserStory)add).getLinks()) {						
-						WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(),"",true);
+						writeAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(),"",true);
 						for(String nameMember : l.getMethodNameList())
-						WriteAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(), nameMember,true);
+							writeAnnotations.addAnnotation(l.getSourceFileAbsPath(), add.getUid(), l.getClassName(), nameMember,true);
 					}
 				}
 				//If its a UsSystem

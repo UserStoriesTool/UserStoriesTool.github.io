@@ -7,7 +7,7 @@
 	public void addLink(String sourceAbsolutePath, String memberName, String parentMemberName)
 	{		
 		
-		String sourcePath = Controller.toRelativePath(sourceAbsolutePath);
+		String sourcePath = Controller.getInstance().toRelativePath(sourceAbsolutePath);
 		LogWriter.info("UserStory: addLink: New Path: " + sourcePath);
 		
 		Link classLink = null;
@@ -20,13 +20,16 @@
 			LogWriter.info("UserStory: addLink: Started with Class Name: " + parentMemberName + " and Method Name: " + memberName);
 			
 			// Find existing Class Link (if it exists)
-			for (Link l : this.getLinks())
+			int i = 0;
+			while (i < this.getLinks().size())
 			{
+				Link l = this.getLinks().get(i);
 				if (parentMemberName.equals(l.getClassName()) && sourcePath.equals(l.getSourceFileRelativePath()))
 				{
 					LogWriter.info("UserStory: addLink: Detected existing Class Link (method: YES)");
 					classLink = l;
 				}
+				i++;
 			}
 			
 			// If there is no existing Class Link, we need to create it (thus this becomes true)
@@ -92,3 +95,4 @@
 			LogWriter.info("UserStory: addLink: User Story \""+this.getName()+"\" Saved with new Link: " + classLink.toString());
 			return;
 		}
+	}
